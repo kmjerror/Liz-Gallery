@@ -142,7 +142,7 @@ def admin_page():
     print("🔍 is_authenticated:", current_user.is_authenticated)
     print("🔍 is_admin:", current_user.is_admin)
 
-    if not is_admin():
+    if not current_user.is_authenticated or not getattr(current_user, "is_admin", False):
         flash("관리자만 접근할 수 있습니다.")
         return redirect(url_for('dashboard'))
     
