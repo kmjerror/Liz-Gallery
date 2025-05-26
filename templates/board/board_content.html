@@ -1,0 +1,23 @@
+<div id="main-content">
+    <h2 class="text-2xl font-bold text-center my-8">📝 자유게시판</h2>
+
+    <div class="text-center mb-6">
+      <a href="{{ url_for('write_post') }}" class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded">
+        ✍️ 글쓰기
+      </a>
+    </div>
+
+    {% if posts %}
+      <div class="max-w-3xl mx-auto space-y-6 px-4">
+        {% for post in posts %}
+          <div class="bg-white border rounded-xl p-4 shadow">
+            <h3 class="text-lg font-semibold text-pink-700">{{ post.title }}</h3>
+            <p class="text-sm text-gray-600 mt-1">작성자: {{ post.author.username }} | {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+            <p class="mt-3 text-gray-800 whitespace-pre-line">{{ post.content }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-center text-gray-500">아직 작성된 게시글이 없습니다.</p>
+    {% endif %}
+</div>

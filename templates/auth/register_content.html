@@ -1,0 +1,39 @@
+<div id="main-content">
+    <h2 class="text-xl font-bold mb-4">Register</h2>
+
+    <form method="POST" action="{{ url_for('register') }}" class="space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div>
+            <input type="text" id="username" name="username" placeholder="Username" required
+                   class="border rounded px-2 py-1 w-full">
+            <p id="username-check" class="text-sm mt-1"></p>
+        </div>
+
+        <div>
+            <input type="password" id="password" name="password" placeholder="Password" required
+                   class="border rounded px-2 py-1 w-full">
+            <p id="password-rule" class="text-sm mt-1 text-gray-500">영문, 숫자, 특수문자 포함 8자 이상 입력</p>
+        </div>
+
+        <div>
+            <input type="password" id="confirm_password" placeholder="Confirm Password" required class="border rounded px-2 py-1 w-full">
+            <p id="password-check" class="text-sm mt-1"></p>
+        </div>
+
+        <div>
+            <input type="email" id="email" name="email" placeholder="Email" required class="border rounded px-2 py-1 w-full">
+        </div>
+
+        <div>
+            <button type="submit" class="bg-pink-500 text-white px-4 py-2 rounded">Register</button>
+        </div>
+    </form>
+
+    {% if get_flashed_messages() %}
+        <div class="text-red-500 mt-4">
+            {% for message in get_flashed_messages() %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>

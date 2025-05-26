@@ -1,0 +1,14 @@
+<div id="main-content">
+    <nav>
+        <a href="{{ url_for('home') }}" class="ajax-link text-blue-600 hover:underline">🏠 홈</a>
+    </nav>
+
+    <div class="container text-center mt-12">
+        <h1 class="text-2xl font-bold text-pink-600">환영합니다, {{ current_user.username }}님!</h1>
+        <h2 class="text-lg text-gray-700 mt-4">리즈갤러리에 오신걸 환영해요 💖</h2>
+
+        <img src="{{ url_for('static', filename='KakaoTalk_20250519_231752352.jpg') }}" alt="liz 1" class="mx-auto my-6 w-72 rounded-xl shadow">
+
+        <p><a href="{{ url_for('logout') }}" class="ajax-link text-pink-500 hover:underline">🚪 로그아웃</a></p>
+    </div>
+</div>

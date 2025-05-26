@@ -1,0 +1,26 @@
+<div id="main-content">
+    <h2 class="text-xl font-bold mb-4">Login</h2>
+
+    <form method="POST" action="{{ url_for('login') }}" class="space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div>
+            <input type="text" name="username" placeholder="Username" required
+                   class="border rounded px-2 py-1 w-full">
+        </div>
+        <div>
+            <input type="password" name="password" placeholder="Password" required
+                   class="border rounded px-2 py-1 w-full">
+        </div>
+        <div>
+            <button type="submit" class="bg-pink-500 text-white px-4 py-2 rounded">Login</button>
+        </div>
+    </form>
+
+    {% if get_flashed_messages() %}
+        <div class="text-red-500 mt-4">
+            {% for message in get_flashed_messages() %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>

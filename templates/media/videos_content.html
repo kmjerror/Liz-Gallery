@@ -1,0 +1,34 @@
+<div id="main-content">
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-6">🎬 동영상</h1>
+
+        <form id="videoForm" method="post" enctype="multipart/form-data" onsubmit="event.preventDefault(); previewAndUploadVideo();" class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <input type="file" id="video" accept="video/*" name="video" class="file-input file-input-bordered w-full max-w-xs" />
+
+            <input type="text" id="descriptionInput" name="description" placeholder="설명 (10자 이내)" maxlength="10" class="border px-2 py-1 rounded w-48 sm:w-auto" />
+
+            <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md shadow">업로드</button>
+        </form>
+
+        <div id="videoGallery" class="grid gird-cols-1 sm:grid-cols-2 gap-6">
+            {% for video in videos %}
+                <div class="relative bg-white rounded-lg shadow p-2" id="video-{{ video.id }}">
+                    <video class="w-full rounded" controls>
+                        <source src="{{ url_for('static', filename='uploads/videos/' + video.filename) }}" type="video/mp4">
+                        your browser does not support the video tag.
+                    </video>
+                    {% if video.description %}
+                    <p class="text-sm text-center text-gray-600 mt-1">{{ video.description }}</p>
+                    {% endif %}
+                    <button onclick="deleteVideo('{{ video.id }}')" class="mt-2 bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded w-full">
+                        삭제
+                    </button>
+                </div>
+            {% else %}
+                <p class="col-span-full text-center text-gray-500">아직 업로드 된 동영상이 없습니다.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>

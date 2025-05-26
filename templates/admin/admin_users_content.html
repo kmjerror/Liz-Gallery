@@ -1,0 +1,39 @@
+<div id="main-content">
+    <h2 class="text-2xl font-bold mb-6">👥 회원 목록</h2>
+
+    <table class="w-full table-auto border-collapse border">
+      <thead>
+        <tr class="bg-pink-100 text-left">
+          <th class="p-2 border">ID</th>
+          <th class="p-2 border">Username</th>
+          <th class="p-2 border">Email</th>
+          <th class="p-2 border">인증</th>
+          <th class="p-2 border">관리자 여부</th>
+          <th class="p-2 border">조치</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td class="p-2 border">{{ user.id }}</td>
+          <td class="p-2 border">{{ user.username }}</td>
+          <td class="p-2 border">{{ user.email }}</td>
+          <td class="p-2 border">
+            <input type="checkbox" disabled {% if user.is_verified %}checked{% endif %}>
+          </td>
+          <td class="p-2 border">{{ '✅' if user.is_admin else '❌' }}</td>
+          <td class="p-2 border">
+            {% if not user.is_admin %}
+              <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="text-red-500 hover:underline text-sm">삭제</button>
+              </form>
+            {% else %}
+              <span class="text-gray-400 text-sm">관리자</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+</div>

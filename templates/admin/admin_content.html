@@ -1,0 +1,51 @@
+<div id="main-content">
+    <h1 class="text-xl font-bold mb-6">📁 관리자 페이지</h1>
+
+    <a href="{{ url_for('home') }}" class="ajax-link inline-block bg-pink-300 hover:bg-pink-400 text-white font-semibold px-4 py-2 rounded mb-6">
+      🏠 홈으로 돌아가기
+    </a>
+
+    <h2 class="text-lg font-semibold mt-6 mb-3">🖼 이미지 목록</h2>
+    <div class="grid grid-cols-4 gap-4">
+      {% for image in image_files %}
+        <div class="border p-2 rounded bg-white shadow-sm">
+          <img src="{{ url_for('static', filename='uploads/images/' ~ image) }}"
+               class="w-full max-w-[120px] h-auto mx-auto rounded">
+          <p class="text-xs mt-2 text-center break-words">{{ image }}</p>
+        </div>
+      {% endfor %}
+    </div>
+
+    <h2 class="text-lg font-semibold mt-10 mb-3">🎬 동영상 목록</h2>
+    <div class="grid grid-cols-3 gap-4">
+      {% for video in video_files %}
+        <div class="border p-2 rounded bg-white shadow-sm">
+          <video controls class="w-full max-w-[200px] h-auto mx-auto rounded">
+            <source src="{{ url_for('static', filename='uploads/videos/' ~ video) }}" type="video/mp4">
+            브라우저가 동영상을 지원하지 않습니다.
+          </video>
+          <p class="text-xs mt-2 text-center break-words">{{ video }}</p>
+        </div>
+      {% endfor %}
+    </div>
+
+    <h2 class="text-lg font-semibold mt-10 mb-3">📝 게시글 목록</h2>
+    <div class="space-y-4">
+        {% for post in posts %}
+            <div class="border p-3 rounded bg-white shadow-sm">
+                <h3 class="text-md font-bold">{{ post.title }}</h3>
+                <p class="text-sm text-gray-600">작성자: {{ post.author.username }} | {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p class="mt-2 text-sm text-gray-800 break-words">{{ post.content }}</p>
+
+                <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}" class="mt-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="text-red-500 hover:text-red-700 text-sm">🗑 삭제</button>
+                </form>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if current_user.is_authenticated and current_user.is_admin %}
+      <a href="{{ url_for('write_notice') }}" class="ajax-link text-pink-900 hover:text-pink-600 transition">📢 공지 작성</a>
+    {% endif %}
+</div>

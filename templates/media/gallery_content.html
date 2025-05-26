@@ -1,0 +1,27 @@
+<div id="main-content">
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-6">📸 갤러리</h1>
+
+        <form id="imageForm" method="POST" enctype="multipart/form-data" action="/upload_image" class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <input type="file" id="imageInput" accept="image/*" name="image" class="file-input file-input-bordered w-full max-w-xs" />
+
+            <input type="text" id="descriptionInput" name="description" placeholder="설명 (10자 이내)" maxlength="10" class="ml-2 px-2 py-1 border rounded" />
+
+            <button type="submit" class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-md shadow">업로드</button>
+        </form>
+
+        <div id="gallery" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {% for image in images %}
+                <div class="relative bg-white rounded-lg shadow p-2">
+                    <img src="{{ url_for('static', filename='uploads/images/' + image.filename) }}" alt="image" class="w-full h-auto rounded" />
+                    <p class="text-sm text-gray-600 text-center mt-2">{{ image.description }}</p>
+                    <button type="button" onclick="deleteImage('{{ image.id }}', this.parentNode)" class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded">삭제</button>
+                </div>
+            {% else %}
+                <p class="col-span-full text-center text-gray-500">아직 업로드 된 이미지가 없습니다.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>

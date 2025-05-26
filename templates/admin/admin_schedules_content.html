@@ -1,0 +1,27 @@
+<div id="main-content">
+    <h2 class="text-2xl font-bold mb-6">🗓 일정 관리</h2>
+
+    <form method="POST" class="space-y-4 mb-8 max-w-xl">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="text" name="title" placeholder="일정 제목" required class="w-full p-2 border rounded" />
+        <input type="date" name="date" required class="w-full p-2 border rounded" />
+        <input type="text" name="location" placeholder="장소 (선택)" class="w-full p-2 border rounded" />
+        <textarea name="note" placeholder="비고" class="w-full p-2 border rounded"></textarea>
+        <button type="submit" class="px-4 py-2 bg-pink-500 text-white rounded">등록</button>
+    </form>
+
+    <div class="space-y-3">
+        {% for s in schedules %}
+            <div class="p-4 bg-white shadow rounded border">
+                <div class="font-semibold text-pink-600">{{ s.title }} <span class="text-sm text-gray-500">({{ s.date }})</span></div>
+                {% if s.location %}<div class="text-sm text-gray-700">📍 {{ s.location }}</div>{% endif %}
+                {% if s.note %}<div class="text-sm text-gray-600 mt-1">{{ s.note }}</div>{% endif %}
+
+                <form method="POST" action="{{ url_for('delete_schedule', schedule_id=s.id) }}" onsubmit="return confirm('정말 삭제하시겠습니까?');" class="mt-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="text-red-500 hover:underline text-sm">🗑 삭제</button>
+                </form>
+            </div>
+        {% endfor %}
+    </div>
+</div>
