@@ -149,8 +149,14 @@ def admin_page():
     image_folder = os.path.join(app.static_folder, 'uploads/images')
     video_folder = os.path.join(app.static_folder, 'uploads/videos')
 
-    image_files = os.listdir(image_folder)
-    video_files = os.listdir(video_folder)
+    image_files = []
+    if os.path.exists(image_folder):
+        image_files = [f for f in os.listdir(image_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))]
+
+    video_files = []
+    if os.path.exists(video_folder):
+        video_files = [f for f in os.listdir(video_folder) if f.lower().endswith(('.mp4', '.webm' '.mov'))]
+        
     posts = Post.query.order_by(Post.created_at.desc()).all()
 
     if  request.headers.get("X-Requested-With") == "XMLHttpRequest":
