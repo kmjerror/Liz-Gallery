@@ -2,7 +2,7 @@ import os
 import re
 import subprocess
 import sqlite3
-from itsdangerous import URLSafeSerializer, SignatureExpired, BadSignature
+from itsdangerous import URLSafeTimeSerializer, SignatureExpired, BadSignature
 from flask_mail import Mail, Message
 from flask_wtf import CSRFProtect
 from functools import wraps
@@ -19,7 +19,7 @@ KST = timezone(timedelta(hours=9))
 
 app = Flask(__name__)
 app.secret_key = 'rhkralswns12?'
-s = URLSafeSerializer(app.config['SECRET_KEY'])
+s = URLSafeTimeSerializer(app.config['SECRET_KEY'])
 csrf = CSRFProtect(app)
 csrf.init_app(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///fanpage.db'
@@ -156,7 +156,7 @@ def admin_page():
     video_files = []
     if os.path.exists(video_folder):
         video_files = [f for f in os.listdir(video_folder) if f.lower().endswith(('.mp4', '.webm' '.mov'))]
-        
+
     posts = Post.query.order_by(Post.created_at.desc()).all()
 
     if  request.headers.get("X-Requested-With") == "XMLHttpRequest":
