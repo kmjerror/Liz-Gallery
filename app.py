@@ -2,7 +2,7 @@ import os
 import re
 import subprocess
 import sqlite3
-from itsdangerous import URLSafeTimeSerializer, SignatureExpired, BadSignature
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from flask_mail import Mail, Message
 from flask_wtf import CSRFProtect
 from functools import wraps
@@ -19,7 +19,7 @@ KST = timezone(timedelta(hours=9))
 
 app = Flask(__name__)
 app.secret_key = 'rhkralswns12?'
-s = URLSafeTimeSerializer(app.config['SECRET_KEY'])
+s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 csrf = CSRFProtect(app)
 csrf.init_app(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///fanpage.db'
