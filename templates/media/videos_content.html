@@ -2,17 +2,14 @@
     <div class="max-w-4xl mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold text-center mb-6">🎬 동영상</h1>
 
-        <form id="videoForm" method="post" enctype="multipart/form-data" onsubmit="event.preventDefault(); previewAndUploadVideo();" class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+        <form id="videoForm" method="post" enctype="multipart/form-data" class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-            <input type="file" id="video" accept="video/*" name="video" class="file-input file-input-bordered w-full max-w-xs" />
-
+            <input type="file" id="video" accept="video/mp4,video/webm,video/ogg" name="video" class="file-input file-input-bordered w-full max-w-xs" />
             <input type="text" id="descriptionInput" name="description" placeholder="설명 (10자 이내)" maxlength="10" class="border px-2 py-1 rounded w-48 sm:w-auto" />
-
             <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md shadow">업로드</button>
         </form>
 
-        <div id="videoGallery" class="grid gird-cols-1 sm:grid-cols-2 gap-6">
+        <div id="videoGallery" class="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {% for video in videos %}
                 <div class="relative bg-white rounded-lg shadow p-2" id="video-{{ video.id }}">
                     <video class="w-full rounded" controls>

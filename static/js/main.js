@@ -96,10 +96,24 @@ function previewAndUploadImage() {
     });
 }
 
+function validateVideoFile(file) {
+    const maxSize = 100 * 1024 * 1024; // 100MB 제한
+
+    if (file.size > maxSize) {
+        alert('파일 크기는 100MB를 초과할 수 없습니다.');
+        return false;
+    }
+
+    if (!file.type.match('video.*')) {
+        alert('비디오 파일만 업로드 가능합니다.');
+        return false;
+    }
+    return true;
+}
+
 function previewAndUploadVideo() {
     const fileInput = document.getElementById("video");
     const form = document.getElementById("videoForm");
-    const preview = document.getElementById("videoPreview");
 
     if (!fileInput || !form || !fileInput.files.length) {
         alert("업로드할 영상을 선택하세요.");
@@ -107,10 +121,9 @@ function previewAndUploadVideo() {
     }
 
     const file = fileInput.files[0];
-    const url = URL.createObjectURL(file);
-    if (preview) {
-        preview.src = url;
-        preview.style.display = 'block';
+    if (!validateVideoFile(file)) {
+        fileInput.value = '';
+        return;
     }
 
     const formData = new FormData(form);
@@ -118,15 +131,24 @@ function previewAndUploadVideo() {
         method: "POST",
         body: formData,
         headers: {
-            "X-Requested-With": "XMLHttpRequest"
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRFToken": getCSRFToken()
         }
     })
-    .then(res => res.json())
+    .then(res => {
+        if (!res.ok) {
+            throw new Error('서버 오류가 발생했습니다.');
+        }
+        return res.json();
+    })
     .then(data => {
         if (data.success) {
             alert("영상 업로드 성공!");
             fetch("/videos", {
-                headers: { "X-Requested-With": "XMLHttpRequest" }
+                headers: { 
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": getCSRFToken()
+                }
             })
             .then(res => res.text())
             .then(html => {
@@ -135,10 +157,18 @@ function previewAndUploadVideo() {
                 rebindDynamicButtons();
                 rebindScrollReveal();
                 rebindUploadForms();
+            })
+            .catch(error => {
+                console.error('페이지 새로고침 중 오류:', error);
+                alert('페이지를 새로고침 해주세요.');
             });
         } else {
-            alert("업로드 실패: " + data.error);
+            alert("업로드 실패: " + (data.error || "알 수 없는 오류가 발생했습니다."));
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(error.message || "업로드 중 오류가 발생했습니다.");
     });
 }
 
@@ -184,36 +214,45 @@ function deleteImage(imageId, parentElement) {
 }
 
 function deleteVideo(videoId) {
-    if (confirm("정말 삭제하시겠습니까?")) {
-        fetch(`/delete_video/${videoId}`, {
-            method: "POST",
-            headers: {
-                'X-CSRFToken': getCSRFToken(),
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                alert("삭제되었습니다.");
-                fetch("/videos", {
-                    headers: { "X-Requested-With": "XMLHttpRequest" }
-                })
-                .then(res => res.text())
-                .then(html => {
-                    document.getElementById("main-content").innerHTML = html;
-                    ajaxifyLinks();
-                    rebindDynamicButtons();
-                    rebindScrollReveal();
-                    rebindUploadForms();
-                });
-            } else {
-                alert(data.error || "삭제에 실패했습니다.");
-            }
-        });
+    if (!confirm("정말 삭제하시겠습니까?")) {
+        return;
     }
-}
 
+    fetch(`/delete_video/${videoId}`, {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken(),
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(res => {
+        if (!res.ok) {
+            throw new Error('서버 오류가 발생했습니다.');
+        }
+        return res.json();
+    })
+    .then(data => {
+        if (data.success) {
+            const videoElement = document.getElementById(`video-${videoId}`);
+            if (videoElement) {
+                videoElement.remove();
+                
+                // 비디오가 모두 삭제되었는지 확인
+                const gallery = document.getElementById('videoGallery');
+                if (gallery && !gallery.children.length) {
+                    gallery.innerHTML = '<p class="col-span-full text-center text-gray-500">아직 업로드 된 동영상이 없습니다.</p>';
+                }
+            }
+        } else {
+            throw new Error(data.error || "삭제 실패");
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(error.message || "삭제 중 오류가 발생했습니다.");
+    });
+}
 
 let currentTrack = 0;
 const audio = document.getElementById("audioPlayer");
