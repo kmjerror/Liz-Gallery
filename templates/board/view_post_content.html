@@ -1,0 +1,48 @@
+<div id="main-content">
+    <div class="p-6 space-y-4">
+        <h1 class="text-2xl font-bold">{{ post.title }}</h1>
+        <p class="text-sm text-gray-500">
+            작성자: {{ post.author.username }} | 작성일: {{ post.created_at.strftime('%Y-%m-%d') }}
+        </p>
+        <p class="text-sm text-gray-500">
+            조회수: {{ post.views }} | 좋아요: <span id="like-count-{{ post.id }}">{{ post.likes_rel|length }}</span>
+        </p>
+
+        <div class="mt-4 text-lg text-gray-800 whitespace-pre-line">
+            {{ post.content }}
+        </div>
+
+        <button class="like-btn mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" data-post-id="{{ post.id }}">
+            {% set user_likes = post.likes_rel | map(attribute='user_id') | list %}
+            {% if current_user.id in user_likes %}
+                ❤️ 좋아요 취소
+            {% else %}
+                🤍 좋아요
+            {% endif %}
+        </button>
+    
+        <hr class="my-6">
+
+        <h2 class="text-xl font-semibold">댓글</h2>
+        <form method="POST" action="{{ url_for('add_comment', post_id=post.id) }}" class="space-y-2" data-post-id="{{ post.id }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <textarea name="content" required class="w-full p-2 border rounded" rows="3" placeholder="댓글을 입력하세요."></textarea>
+            <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">등록</button>
+        </form>
+
+        <div class="space-y-4 mt-4">
+            {% for comment in post.comments %}
+            <div class="p-2 border rounded">
+                <p class="text-sm text-gray-700">{{ comment.author.username }} | {{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p class="text-gray-900">{{ comment.content }}</p>
+                {% if current_user.id == comment.author_id or current_user.is_admin %}
+                    <form method="POST" action="{{ url_for('delete_comment', comment_id=comment.id) }}" class="mt-2">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="text-red-500 text-sm mt-1" onclick="return confirm('삭제하시겠습니까?')">삭제</button>
+                    </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

@@ -2,6 +2,9 @@ import os
 import re
 import subprocess
 import sqlite3
+import click
+from flask_migrate import Migrate
+from flask.cli import with_appcontext
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from flask_mail import Mail, Message
 from flask_wtf import CSRFProtect
@@ -26,6 +29,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///fanpage.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 
+
 def is_admin():
     return current_user.is_authenticated and current_user.is_admin
 
@@ -34,6 +38,8 @@ db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+migrate = Migrate(app, db)
 
 
 class Schedule(db.Model):
@@ -69,9 +75,23 @@ class Post(db.Model):
     is_notice = db.Column(db.Boolean, default=False)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(KST))
+    views = db.Column(db.Integer, default=0)
 
 
     author = db.relationship('User', backref=db.backref('posts', lazy=True))
+    comments = db.relationship('Comment', back_populates='post', cascade='all, delete-orphan')
+    likes_rel = db.relationship('PostLike', back_populates='post', cascade='all, delete-orphan')
+
+
+class PostLike(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(KST))
+
+    post = db.relationship('Post', back_populates='likes_rel')
+
+    __table_args__ = (db.UniqueConstraint('user_id', 'post_id', name='unique_user_post_like'),)
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -118,8 +138,8 @@ class Comment(db.Model):
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
 
-    author = db.relationship('User', backref='comments')
-    post = db.relationship('Post', backref='comments')
+    author = db.relationship('User', backref=db.backref('comments', lazy=True))
+    post = db.relationship('Post', back_populates='comments')
 
 
 class Song(db.Model):
@@ -367,7 +387,7 @@ def upload_image():
             if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return jsonify(success=False, error=error_msg)
             flash(error_msg)
-            return redirect(url_for('gallery'))
+            return redirect(url_for('galler'))
 
         filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{secure_filename(file.filename)}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER_IMAGES'], filename)
@@ -383,15 +403,14 @@ def upload_image():
             image_url = url_for('static', filename='uploads/images/' + filename)
             return jsonify(success=True, image_url=image_url, image_id=new_image.id)
 
-        # 일반 폼 제출이라면
         flash("이미지가 업로드되었습니다.")
-        return redirect(url_for('gallery'))
+        return redirect(url_for('galler'))
 
     error_msg = "허용되지 않는 파일 형식입니다."
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify(success=False, error=error_msg)
     flash(error_msg)
-    return redirect(url_for('gallery'))
+    return redirect(url_for('galler'))
 
 
 @app.route('/delete_image/<int:image_id>', methods=['POST'])
@@ -513,7 +532,7 @@ def delete_post(post_id):
     db.session.delete(post)
     db.session.commit()
     flash('글이 삭제되었습니다.')
-    return redirect(url_for('home'))
+    return redirect(url_for('admin_page'))
 
 
 @app.route('/write_post', methods=['GET', 'POST'])
@@ -532,6 +551,37 @@ def write_post():
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return render_template('board/write_post_content.html', user=current_user)
     return render_template('board/write_post.html', user=current_user)
+
+
+@app.route('/view_post/<int:post_id>')
+@login_required
+def view_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    post.views += 1
+    db.session.commit()
+
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return render_template('board/view_post_content.html', post=post)
+    return render_template('board/view_post.html', post=post)
+
+
+@app.route('/like_post/<int:post_id>', methods=['POST'])
+@login_required
+def like_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    existing_like = PostLike.query.filter_by(user_id=current_user.id, post_id=post_id).first()
+
+    if existing_like:
+        db.session.delete(existing_like)
+        liked = False
+    else:
+        new_like = PostLike(user_id=current_user.id, post_id=post_id)
+        db.session.add(new_like)
+        liked = True
+
+    db.session.commit()
+    total_likes = PostLike.query.filter_by(post_id=post_id).count()
+    return jsonify({'success': True, 'liked': liked, 'total_likes': total_likes})
 
 
 @app.route('/write_notice', methods=['GET', 'POST'])
@@ -568,11 +618,20 @@ def board():
 @app.route('/add_comment/<int:post_id>', methods=['POST'])
 @login_required
 def add_comment(post_id):
-    content = request.form['content']
-    new_comment = Comment(content=content, author_id=current_user.id, post_id=post_id)
-    db.session.add(new_comment)
-    db.session.commit()
-    return redirect(url_for('home'))
+    content = request.form.get('content')
+    if content:
+        new_comment = Comment(post_id=post_id, author_id=current_user.id, content=content)
+        db.session.add(new_comment)
+        db.session.commit()
+
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        post = Post.query.get_or_404(post_id)
+        return render_template('board/view_post_content.html', post=post)
+
+    
+    return redirect(url_for('view_post', post_id=post_id))
+
 
 
 @app.route('/delete_comment/<int:comment_id>', methods=['POST'])
@@ -581,13 +640,14 @@ def delete_comment(comment_id):
     comment = Comment.query.get_or_404(comment_id)
     if comment.author_id != current_user.id and not current_user.is_admin:
         flash("삭제 권한이 없습니다.")
-        return redirect(url_for('home'))
+        return redirect(url_for('view_post', post_id=comment.post_id))
     
+    post_id = comment.post_id
 
     db.session.delete(comment)
     db.session.commit()
     flash("댓글이 삭제되었습니다.")
-    return redirect(url_for('home'))
+    return redirect(url_for('view_post', post_id=post_id))
 
 
 @app.route('/dashboard')
@@ -648,15 +708,19 @@ def logout():
     return redirect(url_for('login'))
 
 
+@app.cli.command("create_admin")
+@with_appcontext
+def create_admin():
+    admin = User.query.filter_by(username='LizHolic').first()
+    if admin:
+        admin.is_admin = True
+        db.session.commit()
+        print("LizHolic 계정에 관리자 권한이 부여되었습니다.")
+    else:
+        print("LizHolic 계정을 찾을 수 없습니다.")
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-
-
-        admin = User.query.filter_by(username='LizHolic').first()
-        if admin:
-            admin.is_admin = True
-            db.session.commit()
-            print("LizHolic 계정에 관리자 권한이 부여되었습니다.")
-        else:
-            print("LizHolic 계정을 찾을 수 없습니다.")
+    app.run(debug=True)
